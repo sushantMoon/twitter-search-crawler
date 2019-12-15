@@ -4,8 +4,8 @@
 # nohup python crawl.py {keyword} {days} &
 #
 #
-# Bug :   On headless browser, namely PhantomJS (which has no GUI, runs in the background), 
-#         is not able to go back beyond 10 days or so, whereas with firefox webdriver 
+# Bug :   On headless browser, namely PhantomJS (which has no GUI, runs in the background),
+#         is not able to go back beyond 10 days or so, whereas with firefox webdriver
 #         (which opens up a firefox gui) we can go beyond as much as we like, currently it is tested for 25 days.
 #####################################
 
@@ -20,36 +20,36 @@ from selenium.webdriver.support import expected_conditions as EC
 from selenium.common.exceptions import NoSuchElementException
 from selenium.common.exceptions import NoAlertPresentException
 import sys
-import time 
+import time
 import dateparser
 from datetime import datetime
-import unittest, time, re
+import time, re
 from bs4 import BeautifulSoup as BS
 import json
 import logging
 
-class Sel():
 
+class Sel():
     def __init__(self):
         self.driver = webdriver.Firefox()
         # self.driver = webdriver.PhantomJS()
         # self.driver.set_window_size(1120, 550)
-        # self.driver.implicitly_wait(30) #### commention as we are using 
+        # self.driver.implicitly_wait(30) #### commention as we are using
         self.base_url = "https://twitter.com"
         self.verificationErrors = []
         self.accept_next_alert = True
-        logging.info("Innitialization Completed")
+        logging.info("Initialization Completed")
 
     def __del__(self):
         self.driver.close()
         self.driver.quit()
         logging.info("Cleaned and Deleted the Webdriver Instance")
 
-    def crawlScroll(self,keyword,days,outputFileName):
+    def crawlScroll(self, keyword, days, outputFileName):
         retrievalDays = int(days)
-        url = "/search?q="+ keyword +"&src=typd"
+        url = "/search?q=" + keyword + "&src=typd"
         self.driver.get(self.base_url + url)
-        wait = WebDriverWait(self.driver,30)            ### 30 sec timeout for Ajax to load
+        wait = WebDriverWait(self.driver, 30)            ### 30 sec timeout for Ajax to load
 
         currentTime = datetime.now()
         loopingContinue = True
@@ -59,12 +59,13 @@ class Sel():
 
         while(loopingContinue):
             html = self.driver.page_source
-            soup = BS(html,"lxml")
-            orderedList = soup.find_all("ol", {"class" : "stream-items js-navigable-stream"})         
+            soup = BS(html, "lxml")
+            orderedList = soup.find_all("ol", {"class": "stream-items js-navigable-stream"})
             for tweetOL in orderedList:
-                tweetList = tweetOL.find_all('li', {"class" : "js-stream-item stream-item stream-item expanding-stream-item\n"})
-                if len(tweetList) == 0 :
-                    print "No Data for this keyword !!!"
+                # tweetList = tweetOL.find_all('li', {"class": "js-stream-item stream-item stream-item expanding-stream-item\n"})
+                tweetList = tweetOL.find_all('li', {"class": "js-stream-item stream-item stream-item\n"})
+                if len(tweetList) == 0:
+                    print("No Data for this keyword !!!")
                     return
                 for tweetElement in tweetList:
                     tweetData = {}                                      #### container for the tweet data, renewed for every tweet
@@ -101,16 +102,16 @@ class Sel():
                             if ' '.join(i for i in innerA['class'] if i.strip() != '') == 'tweet-timestamp js-permalink js-nav js-tooltip':
                                 timeStamp = ','.join([innerA.get('title').split('-')[1].strip(),innerA.get('title').split('-')[0].strip()])
                                 tweetData['Time Stamp'] = dateparser.parse(timeStamp).strftime("%Y-%m-%d %H:%M:%S")
-                                if (currentTime - dateparser.parse(timeStamp)).days > retrievalDays: 
+                                if (currentTime - dateparser.parse(timeStamp)).days > retrievalDays:
                                     loopingContinue = False
                     if tweetData:
                         if tweetData['Tweet Id'] in tweetMap:
                             if tweetMap[tweetData['Tweet Id']] == 1:
                                 with open(outputFileName,'a') as f:
-                                    json.dump(tweetData,f)
-                                    logging.info("Data : %s",json.dumps(tweetData))
+                                    json.dump(tweetData, f)
+                                    logging.info("Data : %s", json.dumps(tweetData))
                                     f.write('\n')
-            if any(v == 1 for v in tweetMap.itervalues()):
+            if any(v == 1 for v in tweetMap.values()):
                 pageEndCheck = 0
             elif pageEndCheck == 20:
                 loopingContinue = False
@@ -135,18 +136,16 @@ class Sel():
         return
 
 
-
 def main(argv):
     keyword = argv[0]
     days = int(argv[1])
-    # print keyword,days
-    outputFileName = keyword+'-3-Data'
+    outputFileName = keyword+'-Data'
     selenium = Sel()
-    selenium.crawlScroll(keyword,days,outputFileName)
+    selenium.crawlScroll(keyword, days, outputFileName)
+
 
 if __name__ == "__main__":
-    loggingFileName = 'Runtime-Outnumbered-'+str(sys.argv[1])+'-3.log'
+    loggingFileName = 'Runtime-TwitterCrawler-'+str(sys.argv[1])+'.log'
     logging.basicConfig(level=logging.INFO, filename=loggingFileName , format='[%(levelname)s] (%(threadName)-10s) %(asctime)s : %(message)s', datefmt='%m/%d/%Y %I:%M:%S %p')
     main(sys.argv[1:])
     logging.info("Exting the code")
-
