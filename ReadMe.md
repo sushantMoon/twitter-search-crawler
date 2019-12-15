@@ -6,6 +6,8 @@ This is a part of Project that deals with generating insights from tweets for a 
 
 Fetch data from Twitter Search Page, for a particular keyword (parameter) scrolling 'x' (parameter) days inthe past.
 
+<b> LIMIT : 10 days </b>
+
 ## Requirements
 ```sh
  selenium, phantonjs, beautifulsoup4, dateparser

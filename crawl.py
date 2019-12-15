@@ -3,10 +3,14 @@
 #
 # nohup python crawl.py {keyword} {days} &
 #
-#
+# ### OUTDATED
 # Bug :   On headless browser, namely PhantomJS (which has no GUI, runs in the background),
 #         is not able to go back beyond 10 days or so, whereas with firefox webdriver
 #         (which opens up a firefox gui) we can go beyond as much as we like, currently it is tested for 25 days.
+#
+# ### UPDATE : 15-12-2019
+# Due to Twitter's limit, only 10 days worth of scrolling can be done.
+# Check with reading the data back form the saved file, there might be errors due to encodings
 #####################################
 
 
@@ -60,10 +64,11 @@ class Sel():
         while(loopingContinue):
             html = self.driver.page_source
             soup = BS(html, "lxml")
+            self.driver.execute_script("window.scrollTo(0, document.body.scrollHeight);")
             orderedList = soup.find_all("ol", {"class": "stream-items js-navigable-stream"})
             for tweetOL in orderedList:
                 # tweetList = tweetOL.find_all('li', {"class": "js-stream-item stream-item stream-item expanding-stream-item\n"})
-                tweetList = tweetOL.find_all('li', {"class": "js-stream-item stream-item stream-item\n"})
+                tweetList = tweetOL.find_all('li', {"class": "js-stream-item stream-item stream-item"})
                 if len(tweetList) == 0:
                     print("No Data for this keyword !!!")
                     return
@@ -107,9 +112,12 @@ class Sel():
                     if tweetData:
                         if tweetData['Tweet Id'] in tweetMap:
                             if tweetMap[tweetData['Tweet Id']] == 1:
-                                with open(outputFileName,'a') as f:
-                                    json.dump(tweetData, f)
-                                    logging.info("Data : %s", json.dumps(tweetData))
+                                data = {str(k): str(v) for k, v in tweetData.items()}
+                                with open(outputFileName, 'a') as f:
+                                    # json.dump(tweetData, f, ensure_ascii=False)
+                                    # logging.info("Data : %s", json.dumps(tweetData, ensure_ascii=False, encoding='utf8'))
+                                    json.dump(data, f)
+                                    logging.info("Data : %s", json.dumps(data))
                                     f.write('\n')
             if any(v == 1 for v in tweetMap.values()):
                 pageEndCheck = 0
@@ -139,7 +147,7 @@ class Sel():
 def main(argv):
     keyword = argv[0]
     days = int(argv[1])
-    outputFileName = keyword+'-Data'
+    outputFileName = keyword+'-Data.log'
     selenium = Sel()
     selenium.crawlScroll(keyword, days, outputFileName)
 
